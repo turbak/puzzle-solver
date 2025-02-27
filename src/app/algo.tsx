@@ -106,7 +106,6 @@ export function solve(month: Month, day: number): string[][] {
 
     const initialGrid = copyGrid(grid)
 
-    const piecesLeft = pieces.slice()
     const result = solveHelper(month, day.toString(), 0, initialGrid)
     if (!result) {
         throw new Error('No solution found')

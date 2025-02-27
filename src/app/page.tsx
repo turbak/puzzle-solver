@@ -1,6 +1,6 @@
 "use client"
 
-import { solve, grid, pieces, type Piece, type Month } from './algo';
+import { solve, grid, /*pieces, type Piece,*/ type Month } from './algo';
 import { useState } from 'react';
 
 export default function Home() {
@@ -71,7 +71,7 @@ export default function Home() {
     )
 }
 
-
+/*
 function PieceView(props: {
     piece: Piece,
     id: number,
@@ -88,6 +88,7 @@ function PieceView(props: {
         </div>
     )
 }
+    */
 
 function colorFromId(id: number): string {
     switch (id) {
@@ -104,7 +105,7 @@ function colorFromId(id: number): string {
     }
 }
 
-
+/*
 function PieceSelector(props: {
     pieces: Piece[],
     setPieces: (pieces: Piece[]) => void,
@@ -117,6 +118,7 @@ function PieceSelector(props: {
         </div>
     )
 }
+    */
 
 function GridView(props: {
     grid: string[][],

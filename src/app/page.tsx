@@ -18,33 +18,57 @@ export default function Home() {
         }
     }
 
-    return <>
-        <h1>Puzzle Solver</h1>
-        <div className=''>
-            <PieceSelector pieces={pieces} setPieces={console.log} />
-            <GridView grid={solution || grid} />
-            <label>
-                Month:
-                <select value={month} onChange={e => setMonth(e.target.value as Month)}>
-                    <option value="jan">January</option>
-                    <option value="feb">February</option>
-                    <option value="mar">March</option>
-                    <option value="apr">April</option>
-                    <option value="may">May</option>
-                    <option value="jun">June</option>
-                    <option value="jul">July</option>
-                    <option value="aug">August</option>
-                    <option value="sep">September</option>
-                    <option value="oct">October</option>
-                    <option value="nov">November</option>
-                    <option value="dec">December</option>
-                </select>
-                Day:
-                <input type="number" value={day} pattern='^([1-9])|([1-3][0-9])$' onChange={e => setDay(parseInt(e.target.value))} />
-            </label>
-            <button onClick={solvePuzzle}>Solve</button>
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
+            <h1 className="text-4xl font-bold text-gray-800 mb-6">Puzzle Solver</h1>
+            <div className="bg-white shadow-lg rounded-2xl p-6 w-full max-w-lg flex flex-col items-center space-y-4">
+
+                <GridView grid={solution || grid} />
+
+                <div className="flex flex-col space-y-2 w-full">
+                    <label className="flex flex-col text-gray-700 font-semibold">
+                        Month:
+                        <select
+                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-1"
+                            value={month}
+                            onChange={e => setMonth(e.target.value as Month)}
+                        >
+                            <option value="jan">January</option>
+                            <option value="feb">February</option>
+                            <option value="mar">March</option>
+                            <option value="apr">April</option>
+                            <option value="may">May</option>
+                            <option value="jun">June</option>
+                            <option value="jul">July</option>
+                            <option value="aug">August</option>
+                            <option value="sep">September</option>
+                            <option value="oct">October</option>
+                            <option value="nov">November</option>
+                            <option value="dec">December</option>
+                        </select>
+                    </label>
+
+                    <label className="flex flex-col text-gray-700 font-semibold">
+                        Day:
+                        <input
+                            className="bg-white text-gray-900 font-bold py-2 px-4 rounded border border-gray-300 mt-1"
+                            type="number"
+                            value={day}
+                            pattern="^([1-9])|([1-3][0-9])$"
+                            onChange={e => setDay(parseInt(e.target.value))}
+                        />
+                    </label>
+                </div>
+
+                <button
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-all"
+                    onClick={solvePuzzle}
+                >
+                    Solve
+                </button>
+            </div>
         </div>
-    </>
+    )
 }
 
 
@@ -107,7 +131,7 @@ function GridView(props: {
                 return (
                     <div
                         key={`${i}-${j}`}
-                        className={`w-8 h-8 flex items-center justify-center
+                        className={`w-10 h-10 flex items-center justify-center font-bold mt-1
                             ${cell?.includes('{')
                                 ? colorFromId(parseInt(cell.replace('{', '').replace('}', '')))
                                 : 'bg-gray-500'

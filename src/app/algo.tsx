@@ -2,7 +2,7 @@ export const grid: string[][] = [
     ['jan', 'feb', 'mar', 'apr', 'may', 'jun'],
     ['jul', 'aug', 'sep', 'oct', 'nov', 'dec'],
     ['1', '2', '3', '4', '5', '6', '7'],
-    ['8', '9', '10', '11', '12', '13','14'],
+    ['8', '9', '10', '11', '12', '13', '14'],
     ['15', '16', '17', '18', '19', '20', '21'],
     ['22', '23', '24', '25', '26', '27', '28'],
     ['29', '30', '31']
@@ -20,12 +20,12 @@ const piece1: Piece = [
 
 const piece2: Piece = [
     ['{2}', '{2}', '{2}', '{2}'],
-    ['{2}', '',    '',    '']
+    ['{2}', '', '', '']
 ]
 
 const piece3: Piece = [
     ['{3}', '{3}', '{3}', ''],
-    ['',    '',    '{3}', '{3}']
+    ['', '', '{3}', '{3}']
 ]
 
 const piece4: Piece = [
@@ -35,39 +35,69 @@ const piece4: Piece = [
 
 const piece5: Piece = [
     ['{5}', '{5}', ''],
-    ['',    '{5}', ''],
-    ['',    '{5}', '{5}'],
+    ['', '{5}', ''],
+    ['', '{5}', '{5}'],
 ]
 
 const piece6: Piece = [
     ['{6}', '{6}', '{6}', '{6}'],
-    ['',    '{6}',  '',   '']
+    ['', '{6}', '', '']
 ]
 
 const piece7: Piece = [
     ['{7}', '{7}'],
-    ['',    '{7}'],
+    ['', '{7}'],
     ['{7}', '{7}']
 ]
 
 const piece8: Piece = [
-    ['{8}',  '',    ''],
-    ['{8}',  '',    ''],
-    ['{8}',  '{8}', '{8}']
+    ['{8}', '', ''],
+    ['{8}', '', ''],
+    ['{8}', '{8}', '{8}']
 ]
 
 export const pieces = [piece1, piece2, piece3, piece4, piece5, piece6, piece7, piece8]
+    .sort((a, b) => {
+        const sizeA = a.flat().filter(c => c !== '').length;
+        const sizeB = b.flat().filter(c => c !== '').length;
+        return sizeB - sizeA;
+    });
 
-const DIRECTIONS = 4
+const MAX_ROTATIONS = 4
 
-const piecesRotations = pieces.map(piece => {
-    const rotations = [piece]
-    for (let i = 0; i < DIRECTIONS; i++) {
-        rotations.push(rotateClockwisePiece(rotations[rotations.length - 1]))
+const pieceRotationsCache = new Map<Piece, Piece[]>();
+
+function getRotations(piece: Piece): Piece[] {
+    if (pieceRotationsCache.has(piece)) {
+        return pieceRotationsCache.get(piece)!;
     }
 
-    return rotations
-})
+    const seen = new Set<string>();
+    const rotations: Piece[] = [];
+    let current = piece;
+
+    for (let i = 0; i < MAX_ROTATIONS; i++) {
+        const variants = [
+            current,
+            flipPiece(current)
+        ];
+
+        for (const variant of variants) {
+            const key = JSON.stringify(variant);
+            if (!seen.has(key)) {
+                seen.add(key);
+                rotations.push(variant);
+            }
+        }
+
+        const next = rotateClockwisePiece(current);
+        if (JSON.stringify(next) === JSON.stringify(piece)) break;
+        current = next;
+    }
+
+    pieceRotationsCache.set(piece, rotations);
+    return rotations;
+}
 
 export function solve(month: Month, day: number): string[][] {
     if (day < 1 || day > 31) {
@@ -77,7 +107,7 @@ export function solve(month: Month, day: number): string[][] {
     const initialGrid = copyGrid(grid)
 
     const piecesLeft = pieces.slice()
-    const result = solveHelper(month, day.toString(), piecesLeft, initialGrid)
+    const result = solveHelper(month, day.toString(), 0, initialGrid)
     if (!result) {
         throw new Error('No solution found')
     }
@@ -105,36 +135,31 @@ function canFindMonthAndDayOnGrid(month: Month, day: string, grid: string[][]): 
     return dayFound && monthFound
 }
 
-function solveHelper(month: Month, day: string, piecesLeft: Piece[], currentGrid: string[][]): string[][]|null {
-    if (!canFindMonthAndDayOnGrid(month, day, currentGrid)) {
+function solveHelper(month: Month, day: string, pieceIdx: number, solutionGrid: string[][]): string[][] | null {
+    if (!canFindMonthAndDayOnGrid(month, day, solutionGrid)) {
         return null
     }
-    if (piecesLeft.length == 0) {
-        return currentGrid
+    if (pieceIdx >= pieces.length) {
+        return solutionGrid
     }
 
-    let currentPiece = piecesLeft[0]
-    const newPiecesLeft = piecesLeft.slice(1)
-    for(let turns = 0; turns < DIRECTIONS; turns++) {
-        for (let rowStart = 0; rowStart < currentGrid.length; rowStart++) {
-            for (let colStart = 0; colStart < currentGrid[rowStart].length; colStart++) {
-                if (!canPlace(currentPiece, rowStart, colStart, currentGrid)) {
+    for (const rotatedPiece of getRotations(pieces[pieceIdx])) {
+        for (let rowStart = 0; rowStart < solutionGrid.length; rowStart++) {
+            for (let colStart = 0; colStart < solutionGrid[rowStart].length; colStart++) {
+                if (!canPlace(rotatedPiece, rowStart, colStart, solutionGrid)) {
                     continue
                 }
 
+                placePiece(solutionGrid, rotatedPiece, rowStart, colStart)
 
-                placePiece(currentGrid, currentPiece, rowStart, colStart)
-
-                const potenitalRes = solveHelper(month, day, newPiecesLeft, currentGrid)
+                const potenitalRes = solveHelper(month, day, pieceIdx + 1, solutionGrid)
                 if (potenitalRes) {
                     return potenitalRes
                 }
 
-                unplacePiece(currentGrid, currentPiece, rowStart, colStart)
+                unplacePiece(solutionGrid, rotatedPiece, rowStart, colStart)
             }
         }
-
-        currentPiece = rotateClockwisePiece(currentPiece)
     }
 
     return null
@@ -151,7 +176,10 @@ function placePiece(grid: string[][], piece: Piece, rowStart: number, colStart: 
                 continue
             }
 
-            grid[rowStart+i][colStart+j] = piece[i][j]
+            const row = i + rowStart
+            const col = j + colStart
+
+            grid[row][col] = piece[i][j]
         }
     }
 }
@@ -163,27 +191,30 @@ function unplacePiece(currentGrid: string[][], piece: Piece, rowStart: number, c
                 continue
             }
 
-            currentGrid[rowStart+i][colStart+j] = grid[rowStart+i][colStart+j]
+            currentGrid[rowStart + i][colStart + j] = grid[rowStart + i][colStart + j]
         }
     }
 }
 
 function canPlace(piece: Piece, rowStart: number, colStart: number, grid: string[][]): boolean {
-   for (let i = 0; i < piece.length; i++) {
+    for (let i = 0; i < piece.length; i++) {
         for (let j = 0; j < piece[i].length; j++) {
             if (piece[i][j] == '') {
                 continue
             }
 
-            if (grid.length - 1 < i + rowStart) {
+            const row = i + rowStart
+            const col = j + colStart
+
+            if (grid.length - 1 < row) {
                 return false
             }
 
-            if (grid[i+rowStart].length - 1 < j + colStart) {
+            if (grid[row].length - 1 < col) {
                 return false
             }
-            
-            if (grid[i+rowStart][j+colStart].includes('{')) {
+
+            if (grid[row][col].includes('{')) {
                 return false
             }
         }
@@ -197,4 +228,8 @@ function rotateClockwisePiece(piece: Piece): Piece {
     return rotated[0].map((_, index) => rotated.map(row => row[index]).reverse())
 }
 
-//console.table(solve('mar', 24))
+function flipPiece(piece: Piece): Piece {
+    return piece.map(row => row.slice()).reverse()
+}
+
+console.table(solve('feb', 26))

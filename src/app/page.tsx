@@ -1,7 +1,7 @@
 "use client"
 
-import { solve, grid, /*pieces, type Piece,*/ type Month } from './algo';
-import { useState, useEffect } from 'react';
+import { /*solve,*/ grid, /*pieces, type Piece,*/ type Month } from './algo';
+import { useState, } from 'react';
 
 export default function Home() {
     const [month, setMonth] = useState<Month>('jan')
@@ -9,7 +9,7 @@ export default function Home() {
 
     const [solution, setSolution] = useState<string[][] | null>(grid)
 
-    const solvePuzzle = useEffect(() => {
+    const solvePuzzle = () => {
         fetch(`/api/solver?month=${month}&day=${day}`)
             .then((res) => res.json())
             .then((data) => setSolution(data))
@@ -19,7 +19,7 @@ export default function Home() {
                 console.error(err)
                 setSolution(null)
             });
-    }, [month, day]);
+    }
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">

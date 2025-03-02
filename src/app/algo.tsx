@@ -231,4 +231,4 @@ function flipPiece(piece: Piece): Piece {
     return piece.map(row => row.slice()).reverse()
 }
 
-console.table(solve('feb', 26))
+//console.table(solve('feb', 26))

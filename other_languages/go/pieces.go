@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"math/bits"
 	"slices"
 	"strings"
 )
@@ -51,25 +53,7 @@ func init() {
 	})
 
 	slices.SortFunc(allPiecesWithTranspositions, func(a, b []Piece) int {
-		countA, countB := 0, 0
-
-		for _, row := range a[0].matrix {
-			for _, val := range row {
-				if val != "" {
-					countA += 1
-				}
-			}
-		}
-
-		for _, row := range b[0].matrix {
-			for _, val := range row {
-				if val != "" {
-					countB += 1
-				}
-			}
-		}
-
-		return countA - countB //descending
+		return bits.OnesCount64(b[0].bitmap) - bits.OnesCount64(a[0].bitmap) //descending
 	})
 }
 
@@ -82,14 +66,14 @@ func registerPiece(matrix [][]string) {
 	for range 4 {
 		flipped := currentPiece.Flip()
 		if !slices.ContainsFunc(pieces, func(piece Piece) bool {
-			return flipped.Equal(piece)
+			return flipped.bitmap == piece.bitmap
 		}) {
 			pieces = append(pieces, flipped)
 		}
 
 		rotated := currentPiece.RotateClockwise()
 		if slices.ContainsFunc(pieces, func(piece Piece) bool {
-			return rotated.Equal(piece)
+			return rotated.bitmap == piece.bitmap
 		}) {
 			break
 		}
@@ -102,53 +86,99 @@ func registerPiece(matrix [][]string) {
 }
 
 type Piece struct {
-	matrix [][]string
+	id     string
+	width  uint64
+	height uint64
+	bitmap uint64
 }
 
 func newPiece(matrix [][]string) Piece {
-	return Piece{matrix: matrix}
+	var bitmap uint64
+
+	idStr := ""
+
+	bitmapPos := 0
+	for i := range matrix {
+		for j := range matrix[i] {
+			bitmapPos++
+
+			if matrix[i][j] == "" {
+				continue
+			}
+
+			idStr = matrix[i][j]
+
+			bitmap |= 1 << bitmapPos
+		}
+
+		for range gridWidth - len(matrix[i]) {
+			bitmapPos++
+		}
+	}
+
+	return Piece{
+		id:     idStr,
+		width:  uint64(len(matrix[0])),
+		height: uint64(len(matrix)),
+		bitmap: trimTrailingZeroes(bitmap),
+	}
 }
 
 func (p *Piece) RotateClockwise() Piece {
-	if len(p.matrix) == 0 {
-		return Piece{}
+	rotated := Piece{
+		width:  p.height,
+		height: p.width,
+		id:     p.id,
+		bitmap: 0,
 	}
 
-	rotated := make([][]string, len(p.matrix[0]))
-
-	for i := range p.matrix[0] {
-		rotated[i] = make([]string, len(p.matrix))
-		for j := range p.matrix {
-			rotated[i][len(p.matrix)-j-1] = p.matrix[j][i]
+	for i := uint64(0); i < gridHeight; i++ {
+		for j := uint64(0); j < gridWidth; j++ {
+			if (1<<(j*gridWidth+i))&p.bitmap > 0 {
+				rotated.bitmap |= 1 << (i*gridWidth + gridWidth - j - 1)
+			}
 		}
 	}
 
-	return newPiece(rotated)
+	rotated.bitmap = trimTrailingZeroes(rotated.bitmap)
+
+	return rotated
 }
 
 func (p *Piece) Flip() Piece {
-	flipped := make([][]string, len(p.matrix))
-	for i := range p.matrix {
-		flipped[i] = make([]string, len(p.matrix[i]))
-		for j, jFlipped := len(p.matrix[i])-1, 0; j >= 0; j, jFlipped = j-1, jFlipped+1 {
-			flipped[i][jFlipped] = p.matrix[i][j]
+	flipped := Piece{
+		id:     p.id,
+		width:  p.width,
+		height: p.height,
+		bitmap: 0,
+	}
+
+	for i := range p.height {
+		var j, jFlipped uint64 = gridWidth, 0
+		for ; j > 0; j, jFlipped = j-1, jFlipped+1 {
+			if (1<<(i*gridWidth+j-1))&p.bitmap > 0 {
+				flipped.bitmap |= 1 << (i*gridWidth + jFlipped)
+			}
 		}
 	}
 
-	return newPiece(flipped)
+	flipped.bitmap = trimTrailingZeroes(flipped.bitmap)
+
+	return flipped
 }
 
 func (p Piece) String() string {
 	sb := strings.Builder{}
 
-	for i := range p.matrix {
-		for j := range p.matrix[i] {
-			sb.WriteRune('[')
+	sb.WriteString(fmt.Sprintf("%b\n", p.bitmap))
 
-			if len(p.matrix[i][j]) == 0 {
-				sb.WriteString("   ")
+	for i := range p.height {
+		for j := range p.width {
+			sb.WriteRune('[')
+			if (1<<(i*gridWidth+j))&p.bitmap > 0 {
+				sb.WriteString(p.id)
 			} else {
-				sb.WriteString(p.matrix[i][j])
+				sb.WriteString("   ")
 			}
 
 			sb.WriteRune(']')
@@ -159,12 +189,20 @@ func (p Piece) String() string {
 	return sb.String()
 }
 
-func (p Piece) Equal(other Piece) bool {
-	for i := range p.matrix {
-		if !slices.Equal(p.matrix[i], other.matrix[i]) {
-			return false
-		}
+func trimTrailingZeroes(bitmap uint64) uint64 {
+	rowMask := uint64(1<<gridWidth - 1)
+	colMask := uint64(0)
+	for i := range gridHeight {
+		colMask |= 1 << (i * gridWidth)
 	}
 
-	return true
+	for bitmap&rowMask == 0 {
+		bitmap >>= gridWidth
+	}
+
+	for bitmap&colMask == 0 {
+		bitmap >>= 1
+	}
+
+	return bitmap
 }

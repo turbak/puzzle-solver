@@ -2,7 +2,12 @@ package main
 
 import "fmt"
 
-func solve(month string, day string) (Grid, error) {
+type PieceAndPosition struct {
+	Piece
+	position
+}
+
+func solve(month string, day string) ([]PieceAndPosition, error) {
 	var monthPos, dayPos position
 
 	for i, row := range grid {
@@ -22,34 +27,40 @@ func solve(month string, day string) (Grid, error) {
 	}
 
 	g := newGrid([]position{monthPos, dayPos})
-	solved := solveHelper(&g, 0)
+	res, solved := solveHelper(g, 0)
 	if !solved {
-		return Grid{}, fmt.Errorf("no solution found for %v", []position{monthPos, dayPos})
+		return nil, fmt.Errorf("no solution found for %v", []position{monthPos, dayPos})
 	}
 
-	return g, nil
+	return res, nil
 }
 
-func solveHelper(g *Grid, pieceIdx int) bool {
+func solveHelper(g Grid, pieceIdx int) ([]PieceAndPosition, bool) {
 	if pieceIdx >= len(allPiecesWithTranspositions) {
-		return true
+		return make([]PieceAndPosition, 0, len(allPiecesWithTranspositions)), true
 	}
 
 	for _, pieceTransposition := range allPiecesWithTranspositions[pieceIdx] {
-		for i, gridRow := range g.matrix {
-			for j := range gridRow {
-				if !g.CanPlace(pieceTransposition, i, j) {
+		for i := uint64(0); i < gridHeight-pieceTransposition.height+1; i++ {
+			for j := uint64(0); j < gridWidth-pieceTransposition.width+1; j++ {
+				if !g.CanPlace(pieceTransposition, int(i), int(j)) {
 					continue
 				}
 
-				g.Place(pieceTransposition, i, j)
-				if solved := solveHelper(g, pieceIdx+1); solved {
-					return true
+				gridCopy := g
+				gridCopy.Place(pieceTransposition, int(i), int(j))
+				if res, solved := solveHelper(gridCopy, pieceIdx+1); solved {
+					return append(res, PieceAndPosition{
+						Piece: pieceTransposition,
+						position: position{
+							i: int(i),
+							j: int(j),
+						},
+					}), true
 				}
-				g.Unplace(pieceTransposition, i, j)
 			}
 		}
 	}
 
-	return false
+	return nil, false
 }

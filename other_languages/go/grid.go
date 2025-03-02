@@ -1,18 +1,20 @@
 package main
 
 import (
-	"slices"
 	"strings"
 )
 
-var grid = [][]string{
-	{"jan", "feb", "mar", "apr", "may", "jun"},
-	{"jul", "aug", "sep", "oct", "nov", "dec"},
+const gridHeight = 7
+const gridWidth = 7
+
+var grid = [gridHeight][gridWidth]string{
+	{"jan", "feb", "mar", "apr", "may", "jun", ""},
+	{"jul", "aug", "sep", "oct", "nov", "dec", ""},
 	{"1", "2", "3", "4", "5", "6", "7"},
 	{"8", "9", "10", "11", "12", "13", "14"},
 	{"15", "16", "17", "18", "19", "20", "21"},
 	{"22", "23", "24", "25", "26", "27", "28"},
-	{"29", "30", "31"},
+	{"29", "30", "31", "", "", "", ""},
 }
 
 type position struct {
@@ -20,100 +22,55 @@ type position struct {
 }
 
 type Grid struct {
-	matrix             [][]string
-	protectedPositions []position
+	bitmap uint64
 }
 
 func newGrid(protectedPositions []position) Grid {
-	gridCopy := make([][]string, len(grid))
+	var bitmap uint64 = 0
 	for i := range grid {
-		gridCopy[i] = slices.Clone(grid[i])
+		for j := range grid[i] {
+			if grid[i][j] == "" {
+				bitmap |= 1 << (i*gridWidth + j)
+			}
+		}
+	}
+
+	for i := range protectedPositions {
+		bitmap |= 1 << (protectedPositions[i].i*gridWidth + protectedPositions[i].j)
 	}
 
 	return Grid{
-		matrix:             gridCopy,
-		protectedPositions: protectedPositions,
+		bitmap: bitmap,
 	}
 }
 
 func (g *Grid) Place(piece Piece, gridI int, gridJ int) {
-	for i := range piece.matrix {
-		for j := range piece.matrix[i] {
-			if piece.matrix[i][j] == "" {
-				continue
-			}
-
-			gridRow := i + gridI
-			gridCol := j + gridJ
-
-			g.matrix[gridRow][gridCol] = piece.matrix[i][j]
-		}
-	}
-}
-
-func (g *Grid) Unplace(piece Piece, gridI int, gridJ int) {
-	for i := range piece.matrix {
-		for j := range piece.matrix[i] {
-			if piece.matrix[i][j] == "" {
-				continue
-			}
-
-			gridRow := i + gridI
-			gridCol := j + gridJ
-
-			g.matrix[gridRow][gridCol] = grid[gridRow][gridCol]
-		}
-	}
+	g.bitmap |= piece.bitmap << (gridI*gridWidth + gridJ)
 }
 
 func (g Grid) CanPlace(piece Piece, gridI int, gridJ int) bool {
-	for i := range piece.matrix {
-		for j := range piece.matrix[i] {
-			if piece.matrix[i][j] == "" {
-				continue
-			}
-
-			gridRow := i + gridI
-			gridCol := j + gridJ
-
-			if len(g.matrix) <= gridRow {
-				return false
-			}
-
-			if len(g.matrix[gridRow]) <= gridCol {
-				return false
-			}
-
-			if strings.HasPrefix(g.matrix[gridRow][gridCol], "{") {
-				return false
-			}
-
-			if slices.ContainsFunc(g.protectedPositions, func(p position) bool {
-				return p.i == gridRow && p.j == gridCol
-			}) {
-				return false
-			}
-		}
-	}
-
-	return true
+	return (piece.bitmap<<(gridI*gridWidth+gridJ))&g.bitmap == 0
 }
 
 func (g Grid) String() string {
 	sb := strings.Builder{}
 
-	for i := range g.matrix {
-		for j := range g.matrix[i] {
+	for i := range grid {
+		for j := range grid[i] {
 			sb.WriteRune('[')
-			switch len(g.matrix[i][j]) {
+			target := grid[i][j]
+			if 1<<(i*gridWidth+j)&g.bitmap > 0 {
+				target = "x"
+			}
+			switch len(target) {
 			case 1:
 				sb.WriteString("  ")
-				sb.WriteString(g.matrix[i][j])
+				sb.WriteString(target)
 			case 2:
 				sb.WriteString(" ")
-				sb.WriteString(g.matrix[i][j])
+				sb.WriteString(target)
 			case 3:
-				sb.WriteString(g.matrix[i][j])
+				sb.WriteString(target)
 			default:
 				sb.WriteString("invalid")
 			}

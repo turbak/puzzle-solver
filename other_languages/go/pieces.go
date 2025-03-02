@@ -53,7 +53,17 @@ func init() {
 	})
 
 	slices.SortFunc(allPiecesWithTranspositions, func(a, b []Piece) int {
-		return bits.OnesCount64(b[0].bitmap) - bits.OnesCount64(a[0].bitmap) //descending
+		fieldsDiff := b[0].Area() - a[0].Area()
+		if fieldsDiff != 0 {
+			return fieldsDiff
+		}
+
+		areaDiff := b[0].height*b[0].width - a[0].height*a[0].width
+		if areaDiff != 0 {
+			return int(areaDiff)
+		}
+
+		return len(a) - len(b)
 	})
 }
 
@@ -94,33 +104,30 @@ type Piece struct {
 
 func newPiece(matrix [][]string) Piece {
 	var bitmap uint64
+	height := len(matrix)
+	if height == 0 {
+		return Piece{}
+	}
+	width := len(matrix[0])
 
 	idStr := ""
 
-	bitmapPos := 0
-	for i := range matrix {
-		for j := range matrix[i] {
-			bitmapPos++
+	for row := 0; row < height; row++ {
+		for col := 0; col < width; col++ {
+			if matrix[row][col] != "" {
+				pos := row*gridWidth + col
+				bitmap |= 1 << pos
 
-			if matrix[i][j] == "" {
-				continue
+				idStr = matrix[row][col]
 			}
-
-			idStr = matrix[i][j]
-
-			bitmap |= 1 << bitmapPos
-		}
-
-		for range gridWidth - len(matrix[i]) {
-			bitmapPos++
 		}
 	}
 
 	return Piece{
 		id:     idStr,
-		width:  uint64(len(matrix[0])),
-		height: uint64(len(matrix)),
-		bitmap: trimTrailingZeroes(bitmap),
+		width:  uint64(width),
+		height: uint64(height),
+		bitmap: bitmap,
 	}
 }
 
@@ -187,6 +194,10 @@ func (p Piece) String() string {
 	}
 
 	return sb.String()
+}
+
+func (p Piece) Area() int {
+	return bits.OnesCount64(p.bitmap)
 }
 
 func trimTrailingZeroes(bitmap uint64) uint64 {

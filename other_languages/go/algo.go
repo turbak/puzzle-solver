@@ -1,5 +1,9 @@
 package main
 
+import (
+	"sync"
+)
+
 type PieceAndPosition struct {
 	Piece
 	position
@@ -25,20 +29,29 @@ func solve(month string, day string) ([]PieceAndPosition, error) {
 	}
 
 	resCh := make(chan []PieceAndPosition)
+	wg := sync.WaitGroup{}
+	wg.Add(len(allPiecesWithTranspositions[0]))
+
+	go func() {
+		wg.Wait()
+		close(resCh)
+	}()
 
 	for i := range allPiecesWithTranspositions[0] {
 		go func(pos int) {
+			defer wg.Done()
+
 			g := newGrid([]position{monthPos, dayPos})
 			res, solved := solveHelper(g, 0, pos)
 			if solved {
-				select {
-				case resCh <- res:
-				}
+				resCh <- res
 			}
 		}(i)
 	}
 
-	return <-resCh, nil
+	res := <-resCh
+
+	return res, nil
 }
 
 func solveHelper(g Grid, pieceIdx int, startPos int) ([]PieceAndPosition, bool) {

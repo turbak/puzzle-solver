@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/bits"
 	"net/http"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -132,7 +133,7 @@ func solve(month string, day string) ([]PieceAndPosition, error) {
 		close(resCh)
 	}()
 
-	for i := range allPiecesWithTranspositions[0] {
+	for i := range min(len(allPiecesWithTranspositions[0]), runtime.NumCPU()) {
 		go func(pos int) {
 			defer wg.Done()
 

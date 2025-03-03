@@ -3,12 +3,14 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/bits"
 	"net/http"
 	"runtime"
 	"slices"
 	"strings"
 	"sync"
+	"time"
 )
 
 func init() {
@@ -75,11 +77,15 @@ func SolveHandler(w http.ResponseWriter, r *http.Request) {
 	month := r.URL.Query().Get("month")
 	day := r.URL.Query().Get("day")
 
+	now := time.Now()
 	res, err := solve(month, day)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	solutionTime := time.Since(now)
+
+	log.Printf("Solution for %s %s took %v\n", month, day, solutionTime)
 
 	solution := make([][]string, gridHeight)
 	for i := range solution {

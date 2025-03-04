@@ -74,7 +74,7 @@ func init() {
 
 	for i := range grid {
 		for j := range grid[i] {
-			if grid[i][j] != "" {
+			if grid[i][j] == "" {
 				gridBitmap |= 1 << (i*gridWidth + j)
 			}
 		}

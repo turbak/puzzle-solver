@@ -71,7 +71,17 @@ func init() {
 
 		return len(a) - len(b)
 	})
+
+	for i := range grid {
+		for j := range grid[i] {
+			if grid[i][j] != "" {
+				gridBitmap |= 1 << (i*gridWidth + j)
+			}
+		}
+	}
 }
+
+var gridBitmap uint64
 
 func SolveHandler(w http.ResponseWriter, r *http.Request) {
 	month := r.URL.Query().Get("month")
@@ -143,7 +153,7 @@ func solve(month string, day string) ([]PieceAndPosition, error) {
 		go func(pos int) {
 			defer wg.Done()
 
-			g := newGrid([]position{monthPos, dayPos})
+			g := newGrid(monthPos, dayPos)
 			res, solved := solveHelper(g, 0, pos)
 			if solved {
 				resCh <- res
@@ -358,15 +368,8 @@ type Grid struct {
 	bitmap uint64
 }
 
-func newGrid(protectedPositions []position) Grid {
-	var bitmap uint64 = 0
-	for i := range grid {
-		for j := range grid[i] {
-			if grid[i][j] == "" {
-				bitmap |= 1 << (i*gridWidth + j)
-			}
-		}
-	}
+func newGrid(protectedPositions ...position) Grid {
+	var bitmap uint64 = gridBitmap
 
 	for i := range protectedPositions {
 		bitmap |= 1 << (protectedPositions[i].i*gridWidth + protectedPositions[i].j)

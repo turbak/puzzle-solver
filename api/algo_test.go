@@ -19,21 +19,20 @@ func TestSolveWholeYear(t *testing.T) {
 		allDays[i] = fmt.Sprintf("%d", i+1)
 	}
 
-	avgElapsed := time.Duration(0)
+	start := time.Now()
 	for _, month := range allMonth {
 		for _, day := range allDays {
-			start := time.Now()
+
 			_, err := solve(month, day)
 			if err != nil {
 				t.Fatal(err)
 			}
-			elapsed := time.Since(start)
-
-			avgElapsed += elapsed
 		}
 	}
+	avgElapsed := time.Since(start)
 
 	t.Logf("Average elapsed: %v", avgElapsed/(time.Duration(len(allMonth)*len(allDays))))
+	t.Logf("Total elapsed: %v", time.Since(start))
 }
 
 func TestSolve(t *testing.T) {

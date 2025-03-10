@@ -1,7 +1,7 @@
 "use client"
 
 import { grid, solve, /*pieces, type Piece,*/ type Month } from './algo';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Analytics } from "@vercel/analytics/react"
 
 export default function Home() {
@@ -11,6 +11,7 @@ export default function Home() {
     const [solGrid, setGrid] = useState<string[][] | null>(grid)
 
     const [displayFPS, setdisplayFPS] = useState(10)
+    const [worker, setWorker] = useState<Worker | null>(null)
 
     const solvePuzzle = () => {
         fetch(`/api/solver?month=${month}&day=${day}`)
@@ -31,6 +32,16 @@ export default function Home() {
             });
     }
 
+    useEffect(() => {
+        return () => {
+            if (worker) {
+                worker.terminate();
+            }
+            setGrid(null);
+        };
+    }, [worker]);
+
+
     const solvePuzzleWithDisplay = () => {
         if (typeof Worker == 'undefined') {
             console.error('Web worker not supported')
@@ -38,6 +49,7 @@ export default function Home() {
         }
 
         const worker = new Worker(new URL('./solverWorker.ts', import.meta.url));
+        setWorker(worker);
 
         worker.onmessage = (event) => {
             if (event.data.error) {
@@ -101,21 +113,40 @@ export default function Home() {
                 <div className='flex gap-4 justify-center'>
                     <button
                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-all"
-                        onClick={solvePuzzle}
+                        onClick={() => {
+                            if (worker) {
+                                worker.terminate()
+                                setWorker(null)
+                            }
+                            solvePuzzle()
+                        }}
                     >
                         Solve
                     </button>
 
                     <button
                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-all"
-                        onClick={() => setGrid(null)}
+                        onClick={() => {
+                            if (worker) {
+                                worker.terminate()
+                                setWorker(null)
+                            }
+                            setGrid(null)
+                        }}
                     >
                         Clear
                     </button>
 
                     <button
                         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-all"
-                        onClick={solvePuzzleWithDisplay}
+                        onClick={() => {
+                            if (worker) {
+                                worker.terminate()
+                                setWorker(null)
+                                setGrid(null)
+                            }
+                            solvePuzzleWithDisplay()
+                        }}
                     >
                         Solve with display
                     </button>
@@ -128,7 +159,15 @@ export default function Home() {
                 className="bg-white text-gray-900 font-bold py-2 px-4 rounded border border-gray-300"
                 type="number"
                 value={displayFPS}
-                onChange={e => setdisplayFPS(parseInt(e.target.value))}
+                onChange={e => {
+                    setdisplayFPS(parseInt(e.target.value))
+                    if (worker) {
+                        worker.terminate()
+                        setWorker(null)
+                        setGrid(null)
+                        solvePuzzleWithDisplay()
+                    }
+                }}
             />
             <Analytics />
         </div>

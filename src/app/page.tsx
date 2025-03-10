@@ -199,13 +199,3 @@ function GridView(props: {
         </div>
     );
 }
-
-export function DicePopup() {
-    return (
-        <div>
-            <h1>Roll the dice</h1>
-            <p>Click the button to roll the dice</p>
-            <button>Roll</button>
-        </div>
-    )
-}

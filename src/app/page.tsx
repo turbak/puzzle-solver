@@ -37,7 +37,6 @@ export default function Home() {
             if (worker) {
                 worker.terminate();
             }
-            setGrid(null);
         };
     }, [worker]);
 

@@ -1,4 +1,4 @@
-import { solveWithDisplay, Month } from './algo';
+import { solveWithDisplay } from './algo';
 
 let lastPostTime = 0;
 const defaultThrottleInterval = 1000 / 10;

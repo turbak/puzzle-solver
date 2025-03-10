@@ -1,7 +1,7 @@
 "use client"
 
-import { grid, solve, solveWithDisplay, /*pieces, type Piece,*/ type Month } from './algo';
-import { useState, useEffect } from 'react';
+import { grid, solve, /*pieces, type Piece,*/ type Month } from './algo';
+import { useState } from 'react';
 
 export default function Home() {
     const [month, setMonth] = useState<Month>('jan')

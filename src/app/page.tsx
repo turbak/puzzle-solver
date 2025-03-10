@@ -2,6 +2,7 @@
 
 import { grid, solve, /*pieces, type Piece,*/ type Month } from './algo';
 import { useState } from 'react';
+import { Analytics } from "@vercel/analytics/react"
 
 export default function Home() {
     const [month, setMonth] = useState<Month>('jan')
@@ -118,6 +119,7 @@ export default function Home() {
                     </button>
                 </div>
             </div>
+            <Analytics />
         </div>
     )
 }

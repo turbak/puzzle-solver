@@ -58,6 +58,8 @@ export default function Home() {
                 setGrid(event.data.grid);
             } else if (event.data.result) {
                 setGrid(event.data.result);
+                worker.terminate();
+                setWorker(null);
             }
         };
 
@@ -66,7 +68,6 @@ export default function Home() {
             day: day,
             throttleInterval: 1000 / displayFPS,
         });
-
     }
 
     return (

@@ -19,7 +19,6 @@ self.onmessage = async (event) => {
             const now = Date.now();
             if (now - lastPostTime >= throttleInterval) {
                 lastPostTime = now;
-                console.log('Sending grid to main thread');
                 self.postMessage({ grid });
             }
         });

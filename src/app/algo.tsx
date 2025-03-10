@@ -60,7 +60,11 @@ export const pieces = [piece1, piece2, piece3, piece4, piece5, piece6, piece7, p
     .sort((a, b) => {
         const sizeA = a.flat().filter(c => c !== '').length;
         const sizeB = b.flat().filter(c => c !== '').length;
-        return sizeB - sizeA;
+        if (sizeB - sizeA !== 0) {
+            return sizeB - sizeA;
+        }
+
+        return a.flat().length - b.flat().length;
     });
 
 const MAX_ROTATIONS = 4
@@ -112,6 +116,53 @@ export function solve(month: Month, day: number): string[][] {
     }
 
     return result
+}
+
+export function solveWithDisplay(month: Month, day: number, onChange: (g: string[][]) => void): string[][] {
+    if (day < 1 || day > 31) {
+        throw new Error('Invalid day')
+    }
+
+    const initialGrid = copyGrid(grid)
+
+    const result = solveHelperWithDisplay(month, day.toString(), 0, initialGrid, onChange)
+    if (!result) {
+        throw new Error('No solution found')
+    }
+
+    return result
+}
+
+function solveHelperWithDisplay(month: Month, day: string, pieceIdx: number, solutionGrid: string[][], onChange: (g: string[][]) => void): string[][] | null {
+    if (!canFindMonthAndDayOnGrid(month, day, solutionGrid)) {
+        return null
+    }
+    if (pieceIdx >= pieces.length) {
+        return solutionGrid
+    }
+
+    for (const rotatedPiece of getRotations(pieces[pieceIdx])) {
+        for (let rowStart = 0; rowStart < solutionGrid.length; rowStart++) {
+            for (let colStart = 0; colStart < solutionGrid[rowStart].length; colStart++) {
+                if (!canPlace(rotatedPiece, rowStart, colStart, solutionGrid)) {
+                    continue
+                }
+
+                placePiece(solutionGrid, rotatedPiece, rowStart, colStart)
+                onChange(solutionGrid)
+
+                const potenitalRes = solveHelperWithDisplay(month, day, pieceIdx + 1, solutionGrid, onChange)
+                if (potenitalRes) {
+                    return potenitalRes
+                }
+
+                unplacePiece(solutionGrid, rotatedPiece, rowStart, colStart)
+                onChange(solutionGrid)
+            }
+        }
+    }
+
+    return null
 }
 
 function canFindMonthAndDayOnGrid(month: Month, day: string, grid: string[][]): boolean {

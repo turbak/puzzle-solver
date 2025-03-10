@@ -1,24 +1,57 @@
 "use client"
 
-import { /*solve,*/ grid, /*pieces, type Piece,*/ type Month } from './algo';
-import { useState, } from 'react';
+import { grid, solve, solveWithDisplay, /*pieces, type Piece,*/ type Month } from './algo';
+import { useState, useEffect } from 'react';
 
 export default function Home() {
     const [month, setMonth] = useState<Month>('jan')
     const [day, setDay] = useState(1)
 
-    const [solution, setSolution] = useState<string[][] | null>(grid)
+    const [solGrid, setGrid] = useState<string[][] | null>(grid)
 
     const solvePuzzle = () => {
         fetch(`/api/solver?month=${month}&day=${day}`)
             .then((res) => res.json())
-            .then((data) => setSolution(data))
+            .then((data) => setGrid(data))
             .then(() => console.log('Solved!'))
-            .then(() => console.log(solution))
+            .then(() => console.log(solGrid))
             .catch((err) => {
                 console.error(err)
-                setSolution(null)
+
+                const res = solve(month, day)
+                if (res === null) {
+                    console.error('No solution found')
+                    setGrid(null)
+                    return
+                }
+                setGrid(res)
             });
+    }
+
+    const solvePuzzleWithDisplay = () => {
+        if (typeof Worker == 'undefined') {
+            console.error('Web worker not supported')
+            return
+        }
+
+        const worker = new Worker(new URL('./solverWorker.ts', import.meta.url));
+
+        worker.onmessage = (event) => {
+            if (event.data.error) {
+                console.error(event.data.error);
+            } else if (event.data.grid) {
+                setGrid(event.data.grid);
+            } else if (event.data.result) {
+                setGrid(event.data.result);
+            }
+        };
+
+        worker.postMessage({
+            month: month,
+            day: day,
+            throttleInterval: 1000 / 10,
+        });
+
     }
 
     return (
@@ -26,7 +59,7 @@ export default function Home() {
             <h1 className="text-4xl font-bold text-gray-800 mb-6">Puzzle Solver</h1>
             <div className="bg-white shadow-lg rounded-2xl p-6 w-full max-w-lg flex flex-col items-center space-y-4">
 
-                <GridView grid={solution || grid} />
+                <GridView grid={solGrid || grid} />
 
                 <div className="flex flex-col space-y-2 w-full">
                     <label className="flex flex-col text-gray-700 font-semibold">
@@ -62,13 +95,28 @@ export default function Home() {
                         />
                     </label>
                 </div>
+                <div className='flex gap-4 justify-center'>
+                    <button
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-all"
+                        onClick={solvePuzzle}
+                    >
+                        Solve
+                    </button>
 
-                <button
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-all"
-                    onClick={solvePuzzle}
-                >
-                    Solve
-                </button>
+                    <button
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-all"
+                        onClick={() => setGrid(null)}
+                    >
+                        Clear
+                    </button>
+
+                    <button
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-md transition-all"
+                        onClick={solvePuzzleWithDisplay}
+                    >
+                        Solve with display
+                    </button>
+                </div>
             </div>
         </div>
     )
@@ -76,22 +124,22 @@ export default function Home() {
 
 /*
 function PieceView(props: {
-    piece: Piece,
-    id: number,
+                piece: Piece,
+            id: number,
 }) {
     return (
-        <div className="grid grid-cols-4 gap-1">
-            {props.piece.map((row, i) => (
-                <div key={i} className="flex gap-1">
-                    {row.map((cell, j) => (
-                        <div key={j} className={`${colorFromId(props.id)} w-8 h-8`} />
-                    ))}
-                </div>
-            ))}
-        </div>
-    )
+            <div className="grid grid-cols-4 gap-1">
+                {props.piece.map((row, i) => (
+                    <div key={i} className="flex gap-1">
+                        {row.map((cell, j) => (
+                            <div key={j} className={`${colorFromId(props.id)} w-8 h-8`} />
+                        ))}
+                    </div>
+                ))}
+            </div>
+            )
 }
-    */
+            */
 
 function colorFromId(id: number): string {
     switch (id) {
@@ -110,24 +158,24 @@ function colorFromId(id: number): string {
 
 /*
 function PieceSelector(props: {
-    pieces: Piece[],
+                pieces: Piece[],
     setPieces: (pieces: Piece[]) => void,
 }) {
     return (
-        <div className="grid grid-cols-4 gap-4">
-            {props.pieces.map((piece, i) => (
-                <PieceView key={i} piece={piece} id={i} />
-            ))}
-        </div>
-    )
+            <div className="grid grid-cols-4 gap-4">
+                {props.pieces.map((piece, i) => (
+                    <PieceView key={i} piece={piece} id={i} />
+                ))}
+            </div>
+            )
 }
-    */
+            */
 
 function GridView(props: {
     grid: string[][],
 }) {
     return (
-        <div className='grid grid-cols-7 gap-1 w-fit border-2 border-gray-400 p-1'>
+        <div className='grid grid-cols-7 gap-1 rounded-lg shadow-lg w-fit border-1 border-gray-400 p-1'>
             {Array.from({ length: 49 }).map((_, index) => {
                 const i = Math.floor(index / 7);
                 const j = index % 7;
@@ -136,7 +184,7 @@ function GridView(props: {
                 return (
                     <div
                         key={`${i}-${j}`}
-                        className={`w-10 h-10 flex items-center justify-center font-bold mt-1
+                        className={`w-10 h-10 flex items-center justify-center font-bold mt-1 rounded-lg 
                             ${cell?.includes('{')
                                 ? colorFromId(parseInt(cell.replace('{', '').replace('}', '')))
                                 : 'bg-gray-500'
@@ -148,4 +196,14 @@ function GridView(props: {
             })}
         </div>
     );
+}
+
+export function DicePopup() {
+    return (
+        <div>
+            <h1>Roll the dice</h1>
+            <p>Click the button to roll the dice</p>
+            <button>Roll</button>
+        </div>
+    )
 }

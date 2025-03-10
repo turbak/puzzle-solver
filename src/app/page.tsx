@@ -58,8 +58,10 @@ export default function Home() {
                 setGrid(event.data.grid);
             } else if (event.data.result) {
                 setGrid(event.data.result);
-                worker.terminate();
-                setWorker(null);
+                if (worker) {
+                    worker.terminate();
+                    setWorker(null);
+                }
             }
         };
 

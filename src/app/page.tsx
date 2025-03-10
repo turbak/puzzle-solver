@@ -10,6 +10,8 @@ export default function Home() {
 
     const [solGrid, setGrid] = useState<string[][] | null>(grid)
 
+    const [displayFPS, setdisplayFPS] = useState(10)
+
     const solvePuzzle = () => {
         fetch(`/api/solver?month=${month}&day=${day}`)
             .then((res) => res.json())
@@ -50,7 +52,7 @@ export default function Home() {
         worker.postMessage({
             month: month,
             day: day,
-            throttleInterval: 1000 / 10,
+            throttleInterval: 1000 / displayFPS,
         });
 
     }
@@ -119,6 +121,15 @@ export default function Home() {
                     </button>
                 </div>
             </div>
+            <label className="flex flex-col text-gray-700 font-semibold">
+                Display Frames Per Second:
+            </label>
+            <input
+                className="bg-white text-gray-900 font-bold py-2 px-4 rounded border border-gray-300"
+                type="number"
+                value={displayFPS}
+                onChange={e => setdisplayFPS(parseInt(e.target.value))}
+            />
             <Analytics />
         </div>
     )
